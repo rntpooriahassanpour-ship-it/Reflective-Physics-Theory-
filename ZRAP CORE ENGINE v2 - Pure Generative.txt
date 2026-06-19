@@ -1,0 +1,198 @@
+import math
+import cmath
+
+# =====================================================================
+# ZRAP CORE ENGINE v2 - Pure Generative & Vector Arithmetic Space
+# منطق: تولید خالص هندسی (بدون آزمون تقسیم) + جبر برداری متقاطع فضا-زمان
+# =====================================================================
+
+G = [6, 4, 2, 4, 2, 4, 6, 2]
+
+def run_zrap_pure_engine(limit):
+    """
+    این تابع کل بافتار فضا را بدون هیچ عملگر تقسیمی تولید می‌کند
+    و هم‌زمان نقشه مختصات، اول‌ها و مرکب‌ها را به صورت دترمینستیک می‌سازد.
+    """
+    num_to_index = {1: 0}
+    index_to_num = [1]
+    
+    current_val = 1
+    idx = 0
+    while True:
+        current_val += G[idx % 8]
+        if current_val > limit:
+            break
+        idx += 1
+        num_to_index[current_val] = idx
+        index_to_num.append(current_val)
+        
+    composites_map = {}
+    generators = set()
+    composites = set()
+    
+    for i, num in enumerate(index_to_num):
+        if num == 1:
+            continue
+            
+        if num not in composites_map:
+            generators.add(num)
+            start_composite = num * num
+            if start_composite <= limit:
+                if start_composite not in composites_map:
+                    composites_map[start_composite] = []
+                composites_map[start_composite].append((num, i))
+        else:
+            composites.add(num)
+            for g, last_wheel_idx in composites_map[num]:
+                next_wheel_idx = last_wheel_idx + 1
+                if next_wheel_idx < len(index_to_num):
+                    next_composite = g * index_to_num[next_wheel_idx]
+                    if next_composite <= limit:
+                        if next_composite not in composites_map:
+                            composites_map[next_composite] = []
+                        composites_map[next_composite].append((g, next_wheel_idx))
+            del composites_map[num]
+            
+    return num_to_index, generators, composites
+
+# ---------------------------------------------------------------------
+# ابزارهای تحلیلی و جبر برداری میدان
+# ---------------------------------------------------------------------
+
+def zrap_transform(n, num_to_index, generators, composites):
+    """نگاشت عدد طبیعی به فضای دو بعدی مختصات ZRAP(n) = (k, phi)"""
+    phi = n % 8
+    in_wheel = n in num_to_index
+    k = num_to_index[n] if in_wheel else None
+    
+    identity = "خارج از بافتار چرخ (گره میرای خلاء)"
+    if in_wheel:
+        if n in generators: identity = "مولد خالص (عدد اول)"
+        elif n in composites: identity = "گره مرکب درون چرخ"
+        elif n == 1: identity = "لنگر مرکزی فضا (Identity)"
+        
+    return {"n": n, "k": k, "phi": phi, "in_wheel": in_wheel, "identity": identity}
+
+def calculate_vector_arithmetic(coord_A, coord_B):
+    """محاسبه برداری میدان بازتابی (جمع و ضرب متقاطع اندیس و فاز)"""
+    # جبر فازها روی میدان پیمانه‌ای ساعت ۸ نشانه‌ای
+    phi_add = (coord_A["phi"] + coord_B["phi"]) % 8
+    phi_mul = (coord_A["phi"] * coord_B["phi"]) % 8
+    
+    # جبر اندیس‌ها بر اساس تعریف مانیفست
+    k_add = coord_A["k"] + coord_B["k"] if (coord_A["in_wheel"] and coord_B["in_wheel"]) else None
+    k_mul = coord_A["k"] * coord_B["k"] if (coord_A["in_wheel"] and coord_B["in_wheel"]) else None
+    
+    return {"add": (k_add, phi_add), "mul": (k_mul, phi_mul)}
+
+# =====================================================================
+# ZRAP REFLECTIVE ZETA FIELD ENGINE V2
+# =====================================================================
+
+def zrap_reflective_zeta(s, num_to_index, generators, composites):
+    """
+    محاسبه تابع زتای بازتابی بر پایه میدان مختصات برداری ZRAP
+    s: یک عدد مختلط (s = re + im*1j)
+    """
+    total_vector_sum = 0 + 0j
+    active_nodes_count = 0
+    
+    for n in sorted(num_to_index.keys()):
+        if n == 1:
+            continue 
+            
+        coord = zrap_transform(n, num_to_index, generators, composites)
+        phi = coord["phi"]
+        
+        # جمله عمومی میدان بازتابی همراه با چرخش فاز غلیظ زمان
+        phase_angle = 2 * math.pi * (phi / 8.0)
+        phase_rotation = cmath.exp(1j * phase_angle)
+        
+        term = phase_rotation / (n ** s)
+        total_vector_sum += term
+        active_nodes_count += 1
+        
+    return total_vector_sum, active_nodes_count
+
+# =====================================================================
+# بخش اجرای آزمایشگاه محاسباتی جامع و یکپارچه
+# =====================================================================
+
+# ۱. مقداردهی اولیه به ماتریکس فضا و تولید هندسی
+limit = int(input("Enter Matrix Limit (e.g., 2000): "))
+print("\n[+] Generating Fabric via v2 Pure Engine... Please wait...")
+num_to_index, generators, composites = run_zrap_pure_engine(limit)
+
+print(f"[✓] Fabric Ready. Total Active Nodes (k_max): {len(num_to_index)}")
+print(f"    - Generators (Primes Found): {len(generators)}")
+print(f"    - Composites in Wheel Found: {len(composites)}")
+print("-" * 60)
+
+# ۲. اجرای موتور زتای بازتابی روی نوار بحرانی (بخش مانیفست زتا)
+print("\n[+] Testing Zeta Resonant Field Balance...")
+print("نکته: بر اساس تئوری، برآیند انرژی در خط تقارن آینه‌ای (re = 0.5) باید پتانسیل مرکز ماتریکس را نشان دهد.")
+
+s_center = 0.5 + 14.134725141734693j  
+res_center, count = zrap_reflective_zeta(s_center, num_to_index, generators, composites)
+
+s_offset = 0.8 + 14.134725141734693j
+res_offset, _ = zrap_reflective_zeta(s_offset, num_to_index, generators, composites)
+
+print(f"\n[📊] FIELD RESONANCE REPORT (Nodes evaluated: {count}):")
+print(f"  ➔ At s = {s_center} (On Mirror Axis 1/2)   -> Vector Sum Magnitude: {abs(res_center):.6f}")
+print(f"  ➔ At s = {s_offset} (Off Mirror Axis 0.8)  -> Vector Sum Magnitude: {abs(res_offset):.6f}")
+print("-" * 60)
+
+# ۳. تحلیل تک‌عددی (تست اول بودن اندیسی و ماتریکسی عدد)
+test_n = int(input("\nEnter a number to analyze ZRAP(n) [Index & Identity Test]: "))
+res = zrap_transform(test_n, num_to_index, generators, composites)
+print(f"\n➔ ZRAP({res['n']}) = (k: {res['k']}, φ: {res['phi']})")
+print(f"➔ Identity: {res['identity']}")
+print("-" * 60)
+
+# ۴. فضای محاسبات برداری متقاطع (جبر برداری میدان)
+print("\n[+] Entering Coordinate Arithmetic Space...")
+n1 = int(input("Enter Node A (n1): "))
+n2 = int(input("Enter Node B (n2): "))
+
+coord_A = zrap_transform(n1, num_to_index, generators, composites)
+coord_B = zrap_transform(n2, num_to_index, generators, composites)
+operations = calculate_vector_arithmetic(coord_A, coord_B)
+
+print(f"\nResult of Field Arithmetic:")
+print(f"  ZRAP(A) ⊕ ZRAP(B) = {operations['add']}")
+print(f"  ZRAP(A) ⊗ ZRAP(B) = {operations['mul']}")
+print("=" * 60)
+
+Enter Matrix Limit (e.g., 2000): 1000000
+
+[+] Generating Fabric via v2 Pure Engine... Please wait...
+[✓] Fabric Ready. Total Active Nodes (k_max): 266666
+    - Generators (Primes Found): 78495
+    - Composites in Wheel Found: 188170
+------------------------------------------------------------
+
+[+] Testing Zeta Resonant Field Balance...
+نکته: بر اساس تئوری، برآیند انرژی در خط تقارن آینه‌ای (re = 0.5) باید پتانسیل مرکز ماتریکس را نشان دهد.
+
+[📊] FIELD RESONANCE REPORT (Nodes evaluated: 266665):
+  ➔ At s = (0.5+14.134725141734693j) (On Mirror Axis 1/2)   -> Vector Sum Magnitude: 0.498156
+  ➔ At s = (0.8+14.134725141734693j) (Off Mirror Axis 0.8)  -> Vector Sum Magnitude: 0.247387
+------------------------------------------------------------
+
+Enter a number to analyze ZRAP(n) [Index & Identity Test]: 66643
+
+➔ ZRAP(66643) = (k: 17771, φ: 3)
+➔ Identity: مولد خالص (عدد اول)
+------------------------------------------------------------
+
+[+] Entering Coordinate Arithmetic Space...
+Enter Node A (n1): 11
+Enter Node B (n2): 11111
+
+Result of Field Arithmetic:
+  ZRAP(A) ⊕ ZRAP(B) = (2964, 2)
+  ZRAP(A) ⊗ ZRAP(B) = (5924, 5)
+============================================================
+
+[Program finished]
